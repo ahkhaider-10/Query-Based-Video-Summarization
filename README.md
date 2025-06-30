@@ -1,12 +1,12 @@
 # Query-Based-Video-Summarization
-Query-Based, Object-Focused Video Summarization in Single and Multi-Object Scenes by Using Grounding DINO, Track Anything and BLIP2 Models
+Query-Based, Object-Focused Video Summarisation in Single and Multi-Object Scenes by Using Grounding DINO, Track Anything and BLIP2 Models
 
 ## 1 · Big‑picture overview
 Goal	Description
 Task	Query‑based, object‑focused video summarisation – given a natural‑language query about an object (“What is the dog doing?”) and a raw video, output 
 (a) a short textual summary of that object’s behaviour and 
 (b) The tracked object masks/bounding boxes through time.
-Why	existing work either 
+Why	does existing work either 
 (i) summarises whole videos without object focus, 
 (ii) tracks objects without textual explanation, or 
 (iii) produces “black‑box” summaries with no interpretable tracking. Your system combines grounded detection → tracking → language so users can see what the model is talking about. 
@@ -32,32 +32,42 @@ Tracking	MOTA, IDF1
 Summarisation	BLEU‑4, METEOR, CIDEr
 
 ## 3  ·  End‑to‑end pipeline
+
 ┌──────────────┐
 │  Raw video   │
 └──────┬───────┘
+
        ▼  (per frame)
+       
 ┌────────────────────┐
 │ Grounding‑DINO     │
 │  query + frame →   │
 │  bboxes            │
 └──────┬─────────────┘
+
        ▼
+       
 ┌────────────────────┐
 │ SAM                │
 │  bbox → mask       │
 └──────┬─────────────┘
+
        ▼   (first mask)
+       
 ┌────────────────────┐
 │ Track‑Anything     │
 │  propagate mask    │
 │  through video     │
 └──────┬─────────────┘
+
        ▼   (masked clip)
+       
 ┌────────────────────┐
 │ BLIP‑2             │
 │  masked frames →   │
 │  summary text      │
 └────────────────────┘
+
 Grounding – run per frame; keep the mask with the highest text‑similarity logit.
 
 Tracking – warm‑start Track‑Anything with that mask; output full video mask stack.
