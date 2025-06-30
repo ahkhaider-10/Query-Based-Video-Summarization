@@ -1,102 +1,61 @@
-# Query-Based-Video-Summarization
-Query-Based, Object-Focused Video Summarisation in Single and Multi-Object Scenes by Using Grounding DINO, Track Anything and BLIP2 Models
+# Query‑Based Object‑Centric Video Summarizer
 
-## 1 · Big‑picture overview
-Goal	Description
-Task	Query‑based, object‑focused video summarisation – given a natural‑language query about an object (“What is the dog doing?”) and a raw video, output 
-(a) a short textual summary of that object’s behaviour and 
-(b) The tracked object masks/bounding boxes through time.
-Why	does existing work either 
-(i) summarises whole videos without object focus, 
-(ii) tracks objects without textual explanation, or 
-(iii) produces “black‑box” summaries with no interpretable tracking. Your system combines grounded detection → tracking → language so users can see what the model is talking about. 
+**Goal**  
+Turn a raw video + a natural‑language query into  
 
-## 2  ·  Key components
-### 2.1  Models
-Stage	Model: What it contributes
-Grounded detection	Grounding‑DINO	takes the text query + frame → returns query‑conditioned bounding boxes. 
-Masking	SAM (Segment Anything)	converts each bounding box to a high‑quality object mask.
-Tracking	Track‑Anything (SAM + XMem)	Propagates the mask through the video, handling occlusion & re‑identification.
-Language	BLIP‑2 (vision‑LLM)	accepts a clip or sequence of masked frames → produces a concise behaviour caption.
+1. **A short, human‑readable summary sentence** (“The dog catches a frisbee and runs away.”)  
+2. **Spatio‑temporal masks / boxes** for the queried object through the whole clip  
 
-### 2.2  Datasets
-Purpose	Dataset	Notes
-Object masks / IoU	DAVIS 2017 video segmentation: High‑quality masks for single objects.
-Textual grounding & summary	VidSTG	Each clip is paired with a query sentence and a ground‑truth description.
-(Optional extras)	SumMe / TVSum (generic summarisation)	For ablation or extra training.
+---
 
-### 2.3  Metrics
-Sub‑task	Metric
-Grounding	IoU / AP on the first frame
-Tracking	MOTA, IDF1
-Summarisation	BLEU‑4, METEOR, CIDEr
+## 1 Big‑Picture Overview
 
-## 3  ·  End‑to‑end pipeline
+| | |
+|---|---|
+| **Problem** | Existing pipelines either summarise *whole* videos without object focus **or** track objects without textual explanation. We combine **grounded detection → tracking → language** so users can *see* what the summary refers to. |
+| **Input** | `video.mp4`, query string (e.g. `"dog"`, `"red car"`). |
+| **Output** | `(summary.txt, masks.npy)` or an annotated GIF. |
+| **Upstream vs. Downstream** | *Upstream* modules (feature extractors) feed a *downstream* summariser task. |
 
-┌──────────────┐
-│  Raw video   │
-└──────┬───────┘
+---
 
-       ▼  (per frame)
-       
-┌────────────────────┐
-│ Grounding‑DINO     │
-│  query + frame →   │
-│  bboxes            │
-└──────┬─────────────┘
+## 2 Key Components
 
-       ▼
-       
-┌────────────────────┐
-│ SAM                │
-│  bbox → mask       │
-└──────┬─────────────┘
+### 2.1 Models
 
-       ▼   (first mask)
-       
-┌────────────────────┐
-│ Track‑Anything     │
-│  propagate mask    │
-│  through video     │
-└──────┬─────────────┘
+| Stage | Model | Role |
+|-------|-------|------|
+| Grounded detection | **Grounding‑DINO** | Query‑conditioned bounding boxes per frame. |
+| Masking | **Segment Anything (SAM)** | Box → high‑quality mask. |
+| Tracking | **Track‑Anything** (SAM + XMem) | Propagate the mask with re‑ID & occlusion handling. |
+| Language | **BLIP‑2** | Produce a one‑sentence caption for the masked clip. |
 
-       ▼   (masked clip)
-       
-┌────────────────────┐
-│ BLIP‑2             │
-│  masked frames →   │
-│  summary text      │
-└────────────────────┘
+### 2.2 Datasets
 
-Grounding – run per frame; keep the mask with the highest text‑similarity logit.
+| Dataset | Used for |
+|---------|---------|
+| **DAVIS 2017** | IoU / MOTA evaluation of masks. |
+| **VidSTG** | Query‑caption supervision (BLEU/CIDEr). |
+| *(optional)* SumMe, TVSum | Extra summarisation pre‑training. |
 
-Tracking – warm‑start Track‑Anything with that mask; output full video mask stack.
+### 2.3 Metrics
 
-Cropping/focusing – feed the masked region (optionally the original + mask) to BLIP‑2.
+| Sub‑task | Metric |
+|----------|--------|
+| Grounding | IoU / AP |
+| Tracking | MOTA, IDF1 |
+| Summarisation | BLEU‑4, METEOR, CIDEr |
 
-Summary generation – BLIP‑2 returns a caption; optionally post‑process with an LLM prompt:
-“Write a one‑sentence summary starting with ‘The <object> …’ ”
+---
 
-Evaluation loop – compute IoU, MOTA, BLEU/CIDEr vs. VidSTG references.
+## 3 End‑to‑End Pipeline
 
-## 4  ·  Starter code skeleton
-Below is a minimal repo structure (Python).
 
-video_summarizer/
-├── datasets/
-│   ├── __init__.py
-│   ├── davis.py          # loads DAVIS videos + masks
-│   └── vidstg.py         # loads VidSTG clips + queries
-├── models/
-│   ├── grounding_dino_wrapper.py
-│   ├── sam_wrapper.py
-│   ├── track_anything_wrapper.py
-│   └── blip2_wrapper.py
-├── pipeline/
-│   ├── tracker.py        # orchestrates detection → mask → tracking
-│   └── summarizer.py     # calls BLIP‑2, post‑processes text
-├── utils/
-│   ├── metrics.py        # IoU, MOTA, BLEU, etc.
-│   └── vis.py            # overlay masks / save GIFs
-├── main.py               # CLI entry‑point
-└── config.yaml           # paths, hyper‑params
+1. **Grounding**: detect query object each frame.  
+2. **Masking**: refine first box to a mask.  
+3. **Tracking**: propagate mask through clip.  
+4. **Summarising**: feed masked frames + query to BLIP‑2.  
+5. **Evaluate**: compute IoU/MOTA + BLEU/CIDEr on DAVIS & VidSTG.
+
+---
+
