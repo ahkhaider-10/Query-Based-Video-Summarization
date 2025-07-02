@@ -59,3 +59,33 @@ Turn a raw video + a natural‑language query into
 
 ---
 
+## 4 Setup and Weight Initialisation
+
+* We cloned the necessary models from the repositories below. To run our model you first have to set up the models' weights using the commands below. (Weight files are too big to upload it into github unfortunately). Also you can always visit the model repos if you have to reclone these models.
+
+## Clone Grounding DINO
+[https://github.com/IDEA-Research/GroundingDINO](https://github.com/IDEA-Research/GroundingDINO)
+
+```
+cd weights
+wget -q https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth
+cd ..
+```
+
+## Clone SAM
+[https://github.com/facebookresearch/segment-anything](https://github.com/facebookresearch/segment-anything)
+
+````
+mkdir sam_initial_checkpoint
+wget -O sam_initial_checkpoint/sam_vit_h_4b8939.pth https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
+````
+
+## Clone TrackAnything
+[https://github.com/gaomingqi/Track-Anything](https://github.com/gaomingqi/Track-Anything)
+
+## Clone BLIP2
+[https://github.com/salesforce/LAVIS/tree/main/projects/blip2](https://github.com/salesforce/LAVIS/tree/main/projects/blip2)
+
+## Clone SAMTrack
+[https://github.com/z-x-yang/Segment-and-Track-Anything](https://github.com/z-x-yang/Segment-and-Track-Anything)
+
